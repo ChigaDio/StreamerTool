@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Iframe Editor</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron :wght@400;700&display=swap');
+        body {
+            margin: 0;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: linear-gradient(180deg, #0a0a0a, #1a1a1a);
+            overflow: hidden;
+            font-family: 'Orbitron', sans-serif;
+            color: #fff;
+            position: relative;
+        }
+        .container {
+            display: flex;
+            width: 100%;
+            height: 100%;
+        }
+        .left-panel {
+            flex: 1;
+            position: relative;
+            background: rgba(0, 0, 0, 0.8);
+            border-right: 2px solid rgba(255, 255, 255, 0.3);
+        }
+        .right-panel {
+            flex: 1;
+            background: rgba(0, 0, 0, 0.9);
+            padding: 20px;
+            overflow-y: auto;
+        }
+        .iframe-container {
+            width: 100%;
+            height: 100%;
+            position: relative;
+        }
+        iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+            background: rgba(0, 0, 0, 0.7);
+        }
+        .menu-overlay {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 10px;
+            border-radius: 5px;
+            z-index: 10;
+        }
+        .menu-overlay button {
+            padding: 5px 10px;
+            margin: 5px;
+            background: rgba(0, 255, 255, 0.3);
+            border: none;
+            cursor: pointer;
+        }
+        .parameter-section {
+            margin-bottom: 20px;
+        }
+        .parameter-section label {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 1rem;
+        }
+        .parameter-section input, .parameter-section select {
+            width: 100%;
+            padding: 5px;
+            margin-bottom: 10px;
+            background: rgba(0, 0, 0, 0.7);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: #fff;
+        }
+        .color-picker {
+            width: 100%;
+        }
+        .apply-button {
+            padding: 10px;
+            background: rgba(0, 255, 255, 0.5);
+            border: none;
+            cursor: pointer;
+        }
+        .file-drop-area {
+            margin-top: 20px;
+            padding: 10px;
+            background: rgba(0, 0, 0, 0.7);
+            border: 2px dashed rgba(255, 255, 255, 0.3);
+            text-align: center;
+            cursor: pointer;
+        }
+        .file-drop-area:hover {
+            background: rgba(0, 255, 255, 0.2);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- 左パネル -->
+        <div class="left-panel">
+            <div class="iframe-container">
+                <iframe id="previewIframe" src="berumondo_alcohol/index.html"></iframe>
+                <div class="menu-overlay">
+                    <button onclick="changeBackgroundColor()">Change Background</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 右パネル -->
+        <div class="right-panel">
+            <div id="parameterForm"></div>
+            <button class="apply-button" onclick="applyParameters()">Apply Parameters</button>
+            <div class="file-drop-area" id="fileDropArea">
+                Drag & Drop JSON File Here
+            </div>
+            <button onclick="downloadFiles()">Download Files</button>
+            <button onclick="openBrowserSource()">Open Browser Source</button>
+        </div>
+    </div>
+
+    <script>
+        const previewIframe = document.getElementById('previewIframe');
+        let parameters = {};
+
+        // 背景色変更
+        function changeBackgroundColor() {
+            const color = prompt("Enter background color (e.g., #ffffff):", "#000000");
+            if (color) {
+                previewIframe.style.backgroundColor = color;
+            }
+        }
+
+        // パラメーター適用
+        function applyParameters() {
+            parameters.title = document.getElementById('paramTitle').value;
+            parameters.value = document.getElementById('paramValue').value;
+            parameters.flag = document.getElementById('paramFlag').value === "true";
+            parameters.color = document.getElementById('paramColor').value;
+            parameters.opacity = document.getElementById('paramOpacity').value;
+
+            const iframeDoc = previewIframe.contentDocument || previewIframe.contentWindow.document;
+            iframeDoc.body.style.backgroundColor = parameters.color;
+            iframeDoc.body.style.opacity = parameters.opacity;
+            console.log("Applied Parameters:", parameters);
+        }
+
+        // JSONファイルのドラッグアンドドロップ
+        const fileDropArea = document.getElementById('fileDropArea');
+        fileDropArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            fileDropArea.style.background = 'rgba(0, 255, 255, 0.2)';
+        });
+        fileDropArea.addEventListener('dragleave', () => {
+            fileDropArea.style.background = 'rgba(0, 0, 0, 0.7)';
+        });
+        fileDropArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            fileDropArea.style.background = 'rgba(0, 0, 0, 0.7)';
+            const file = e.dataTransfer.files[0];
+            if (file.type === "application/json") {
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    parameters = JSON.parse(event.target.result);
+                    updateUIFromParameters();
+                };
+                reader.readAsText(file);
+            } else {
+                alert("Please upload a valid JSON file.");
+            }
+        });
+
+        // UIをパラメーターから更新
+        function updateUIFromParameters() {
+            document.getElementById('paramTitle').value = parameters.title || "";
+            document.getElementById('paramValue').value = parameters.value || "";
+            document.getElementById('paramFlag').value = parameters.flag ? "true" : "false";
+            document.getElementById('paramColor').value = parameters.color || "#000000";
+            document.getElementById('paramOpacity').value = parameters.opacity || "1";
+        }
+
+        // ファイルのダウンロード
+        function downloadFiles() {
+            const zip = new JSZip();
+            zip.file("parameters.json", JSON.stringify(parameters));
+            zip.generateAsync({ type: "blob" }).then((content) => {
+                const link = document.createElement("a");
+                link.href = URL.createObjectURL(content);
+                link.download = "project.zip";
+                link.click();
+            });
+        }
+
+        // ブラウザソースを開く
+        function openBrowserSource() {
+            const url = `${previewIframe.src}?params=${encodeURIComponent(JSON.stringify(parameters))}`;
+            window.open(url, "_blank");
+        }
+
+
+        // 動的なパラメータフォームの生成
+        function generateParameterForm(data) {
+            const parameterForm = document.getElementById('parameterForm');
+            parameterForm.innerHTML = ''; // フォームをクリア
+        
+            data.forEach(param => {
+                const section = document.createElement('div');
+                section.className = 'parameter-section';
+            
+                const label = document.createElement('label');
+                label.textContent = param.description || 'Unnamed Parameter';
+                section.appendChild(label);
+            
+                if (param.type === 'number') {
+                    // 数値（Number）
+                    const input = document.createElement('input');
+                    input.type = 'number';
+                    input.value = param.value || 0;
+                    input.dataset.key = param.description; // 識別用のキー
+                    section.appendChild(input);
+                } else if (param.type === 'color') {
+                    // 色（Color）
+                    const colorContainer = document.createElement('div');
+                    colorContainer.style.display = 'flex';
+                    colorContainer.style.gap = '10px';
+                
+                    const colorInput = document.createElement('input');
+                    colorInput.type = 'color';
+                    colorInput.value = param.value || '#ffffff';
+                    colorInput.dataset.key = `${param.description}-color`;
+                
+                    const opacityInput = document.createElement('input');
+                    opacityInput.type = 'range';
+                    opacityInput.min = '0';
+                    opacityInput.max = '1';
+                    opacityInput.step = '0.01';
+                    opacityInput.value = param.alpha || '1';
+                    opacityInput.dataset.key = `${param.description}-opacity`;
+                
+                    colorContainer.appendChild(colorInput);
+                    colorContainer.appendChild(opacityInput);
+                    section.appendChild(colorContainer);
+                } else {
+                    // その他の型（文字列など）
+                    const input = document.createElement('input');
+                    input.type = 'text';
+                    input.value = param.value || '';
+                    input.dataset.key = param.description;
+                    section.appendChild(input);
+                }
+            
+                parameterForm.appendChild(section);
+            });
+        }
+
+        // JSON ファイルの読み込み時にフォームを更新
+        fileDropArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            fileDropArea.style.background = 'rgba(0, 0, 0, 0.7)';
+            const file = e.dataTransfer.files[0];
+            if (file.type === "application/json") {
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    const data = JSON.parse(event.target.result);
+                    generateParameterForm(data); // 動的フォーム生成
+                };
+                reader.readAsText(file);
+            } else {
+                alert("Please upload a valid JSON file.");
+            }
+        });
+
+        // パラメーターを適用
+        function applyParameters() {
+            const formElements = document.querySelectorAll('#parameterForm .parameter-section');
+            formElements.forEach(section => {
+                const label = section.querySelector('label').textContent;
+                const inputs = section.querySelectorAll('input');
+            
+                inputs.forEach(input => {
+                    const key = input.dataset.key;
+                    if (input.type === 'color') {
+                        parameters[key] = input.value; // カラーコード
+                    } else if (input.type === 'range') {
+                        parameters[key] = input.value; // 透過率
+                    } else {
+                        parameters[key] = input.value; // その他の値
+                    }
+                });
+            });
+        
+            console.log("Applied Parameters:", parameters);
+        }
+
+            
+    document.addEventListener("DOMContentLoaded", (event) => {
+       fetch('./berumondo_alcohol/config/config.json') // ローカルサーバーの URL
+    .then(response => response.json())
+    .then(data => {
+        console.log("Fetched JSON:", data);
+    })
+    .catch(error => {
+        console.error("Error fetching JSON:", error);
+    });
+    });
+    </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.7.1/jszip.min.js "></script>
+</body>
+</html>

@@ -1,0 +1,18 @@
+[
+    {
+        "type": "number",
+        "value": 42,
+        "description": "Test Number"
+    },
+    {
+        "type": "color",
+        "value": "#ff0000",
+        "alpha": 0.8,
+        "description": "Test Color"
+    },
+    {
+        "type": "string",
+        "value": "Hello World",
+        "description": "Test String"
+    }
+]
