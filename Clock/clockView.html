@@ -105,7 +105,7 @@
         <!-- 左パネル -->
         <div class="left-panel">
             <div class="iframe-container">
-                <iframe id="previewIframe" src="berumondo_alcohol/index.html"></iframe>
+                <iframe id="previewIframe"></iframe>
                 <div class="menu-overlay">
                     <button onclick="changeBackgroundColor()">Change Background</button>
                 </div>
@@ -149,6 +149,11 @@
             iframeDoc.body.style.opacity = parameters.opacity;
             console.log("Applied Parameters:", parameters);
         }
+        function convertJsonToArray(jsonData) {
+    return Object.keys(jsonData).map(key => {
+        return { ...jsonData[key], key }; // 各パラメーターにキーを追加
+    });
+}
 
         // JSONファイルのドラッグアンドドロップ
         const fileDropArea = document.getElementById('fileDropArea');
@@ -167,7 +172,8 @@
                 const reader = new FileReader();
                 reader.onload = (event) => {
                     parameters = JSON.parse(event.target.result);
-                    updateUIFromParameters();
+            //const dataArray = convertJsonToArray(parameters); // オブジェクトを配列に変換
+            generateParameterForm(parameters); // 動的フォーム生成
                 };
                 reader.readAsText(file);
             } else {
@@ -198,111 +204,128 @@
 
         // ブラウザソースを開く
         function openBrowserSource() {
-            const url = `${previewIframe.src}?params=${encodeURIComponent(JSON.stringify(parameters))}`;
+            const url = `${previewIframe.src}`;
             window.open(url, "_blank");
         }
 
 
-        // 動的なパラメータフォームの生成
-        function generateParameterForm(data) {
-            const parameterForm = document.getElementById('parameterForm');
-            parameterForm.innerHTML = ''; // フォームをクリア
-        
-            data.forEach(param => {
-                const section = document.createElement('div');
-                section.className = 'parameter-section';
-            
-                const label = document.createElement('label');
-                label.textContent = param.description || 'Unnamed Parameter';
-                section.appendChild(label);
-            
-                if (param.type === 'number') {
-                    // 数値（Number）
-                    const input = document.createElement('input');
-                    input.type = 'number';
-                    input.value = param.value || 0;
-                    input.dataset.key = param.description; // 識別用のキー
-                    section.appendChild(input);
-                } else if (param.type === 'color') {
-                    // 色（Color）
-                    const colorContainer = document.createElement('div');
-                    colorContainer.style.display = 'flex';
-                    colorContainer.style.gap = '10px';
-                
-                    const colorInput = document.createElement('input');
-                    colorInput.type = 'color';
-                    colorInput.value = param.value || '#ffffff';
-                    colorInput.dataset.key = `${param.description}-color`;
-                
-                    const opacityInput = document.createElement('input');
-                    opacityInput.type = 'range';
-                    opacityInput.min = '0';
-                    opacityInput.max = '1';
-                    opacityInput.step = '0.01';
-                    opacityInput.value = param.alpha || '1';
-                    opacityInput.dataset.key = `${param.description}-opacity`;
-                
-                    colorContainer.appendChild(colorInput);
-                    colorContainer.appendChild(opacityInput);
-                    section.appendChild(colorContainer);
-                } else {
-                    // その他の型（文字列など）
-                    const input = document.createElement('input');
-                    input.type = 'text';
-                    input.value = param.value || '';
-                    input.dataset.key = param.description;
-                    section.appendChild(input);
-                }
-            
-                parameterForm.appendChild(section);
-            });
-        }
+            // 動的なパラメータフォームの生成
+    function generateParameterForm(data) {
+        const parameterForm = document.getElementById('parameterForm');
+        parameterForm.innerHTML = ''; // フォームをクリア
 
-        // JSON ファイルの読み込み時にフォームを更新
-        fileDropArea.addEventListener('drop', (e) => {
-            e.preventDefault();
-            fileDropArea.style.background = 'rgba(0, 0, 0, 0.7)';
-            const file = e.dataTransfer.files[0];
-            if (file.type === "application/json") {
-                const reader = new FileReader();
-                reader.onload = (event) => {
-                    const data = JSON.parse(event.target.result);
-                    generateParameterForm(data); // 動的フォーム生成
-                };
-                reader.readAsText(file);
-            } else {
-                alert("Please upload a valid JSON file.");
+        Object.keys(data).forEach(key => {
+            const param = data[key];
+            const section = document.createElement('div');
+            section.className = 'parameter-section';
+
+            // ラベル
+            const label = document.createElement('label');
+            label.textContent = param.description || 'Unnamed Parameter';
+            section.appendChild(label);
+
+            if (param.type === 'number') {
+                // 数値型
+                const input = document.createElement('input');
+                input.type = 'number';
+                input.value = param.value || 0;
+                input.dataset.key = `${key}-value`; // データキーを設定
+                section.appendChild(input);
+            } else if (param.type === 'color') {
+                // 色型
+                const colorContainer = document.createElement('div');
+                colorContainer.style.display = 'flex';
+                colorContainer.style.gap = '10px';
+
+                const colorInput = document.createElement('input');
+                colorInput.type = 'color';
+                colorInput.value = param.value || '#ffffff';
+                colorInput.dataset.key = `${key}-value`;
+
+                const opacityInput = document.createElement('input');
+                opacityInput.type = 'range';
+                opacityInput.min = '0';
+                opacityInput.max = '1';
+                opacityInput.step = '0.01';
+                opacityInput.value = param.alpha || '1';
+                opacityInput.dataset.key = `${key}-alpha`;
+
+                colorContainer.appendChild(colorInput);
+                colorContainer.appendChild(opacityInput);
+                section.appendChild(colorContainer);
+            } else if (param.type === 'string') {
+                // 文字列型
+                const input = document.createElement('input');
+                input.type = 'text';
+                input.value = param.value || '';
+                input.dataset.key = `${key}-value`; // データキーを設定
+                section.appendChild(input);
             }
+
+            parameterForm.appendChild(section);
         });
+    }
+
 
         // パラメーターを適用
         function applyParameters() {
             const formElements = document.querySelectorAll('#parameterForm .parameter-section');
             formElements.forEach(section => {
-                const label = section.querySelector('label').textContent;
+                const label = section.querySelector('label').textContent; // パラメーター名
                 const inputs = section.querySelectorAll('input');
             
                 inputs.forEach(input => {
-                    const key = input.dataset.key;
+                    const keyParts = input.dataset.key.split('-'); // キーを分割（例: "bubbleCount-value"）
+                    const paramKey = keyParts[0]; // パラメーターのトップレベルキー（例: "bubbleCount"）
+                
+                    if (!parameters[paramKey]) {
+                        parameters[paramKey] = {}; // トップレベルキーが存在しない場合は初期化
+                    }
+                
                     if (input.type === 'color') {
-                        parameters[key] = input.value; // カラーコード
+                        // 色の場合
+                        parameters[paramKey].value = input.value;
                     } else if (input.type === 'range') {
-                        parameters[key] = input.value; // 透過率
+                        // 透過率の場合
+                        parameters[paramKey].alpha = parseFloat(input.value); // alphaとして保存
+                    } else if (input.type === 'number') {
+                        // 数値の場合
+                        parameters[paramKey].value = parseFloat(input.value);
                     } else {
-                        parameters[key] = input.value; // その他の値
+                        // 文字列などの場合
+                        parameters[paramKey].value = input.value;
                     }
                 });
             });
-        
-            console.log("Applied Parameters:", parameters);
+
+            const params = new URLSearchParams(window.location.search);
+            if(!params) return;
+             const iframeSrcParam = params.get('src'); // 'src' パラメータから iframe の URL を取得
+            if(iframeSrcParam == "") return;
+            const jsonString = JSON.stringify(parameters);
+            const encodedParams = encodeURIComponent(jsonString);
+            previewIframe.src = `${iframeSrcParam}?data=${encodedParams}`;
         }
 
             
     document.addEventListener("DOMContentLoaded", (event) => {
-       fetch('./berumondo_alcohol/config/config.json') // ローカルサーバーの URL
+
+        const params = new URLSearchParams(window.location.search);
+        if(!params) return;
+        const configParam = params.get('config'); // 'config' パラメータから JSON ファイルパスを取得
+        const iframeSrcParam = params.get('src'); // 'src' パラメータから iframe の URL を取得
+        if(configParam == "" || iframeSrcParam == "") return;
+       fetch(configParam) // ローカルサーバーの URL
     .then(response => response.json())
     .then(data => {
-        console.log("Fetched JSON:", data);
+
+            // JSONデータを文字列化してエンコード
+        const jsonString = JSON.stringify(data);
+        const encodedParams = encodeURIComponent(jsonString);
+        previewIframe.src = `${iframeSrcParam}?data=${encodedParams}`;
+        parameters = data;
+        //const dataArray = convertJsonToArray(parameters); // オブジェクトを配列に変換
+        generateParameterForm(parameters); // 動的フォーム生成
     })
     .catch(error => {
         console.error("Error fetching JSON:", error);

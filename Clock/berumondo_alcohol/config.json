@@ -1,18 +1,18 @@
-[
-    {
+{
+    "bubbleCount": {
         "type": "number",
-        "value": 42,
-        "description": "Test Number"
+        "value": 30,
+        "description": "泡の数"
     },
-    {
+    "color_panel": {
         "type": "color",
         "value": "#ff0000",
         "alpha": 0.8,
         "description": "Test Color"
     },
-    {
+    "string_test": {
         "type": "string",
         "value": "Hello World",
         "description": "Test String"
     }
-]
+}

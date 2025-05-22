@@ -82,7 +82,7 @@
     // 波＋泡領域の高さ
     const liquidHeight = 150;
     // 泡パラメータ
-    const bubbleCount = 30;
+    let bubbleCount = 30;
     const bubbles = [];
     // 波パラメータ
     const amplitude = 10;
@@ -107,6 +107,27 @@
         });
       }
     }
+      function initParameter()
+  {
+    let data = [];
+    const params = new URLSearchParams(window.location.search);
+    const encodedData = params.get('data'); // クエリパラメーターからJSONデータを取得
+
+    if (encodedData) {
+        try {
+            // デコードしてJSONを解析
+            const decodedData = decodeURIComponent(encodedData);
+            data = JSON.parse(decodedData);
+
+            bubbleCount = data.bubbleCount.value;
+        } catch (error) {
+            console.error("Error parsing JSON data:", error);
+        }
+    } else {
+        console.error("No data parameter found in the URL.");
+    }
+
+  }
 
     // 波のパスを作成
     function createWavePath() {
@@ -169,6 +190,7 @@
     }
 
     // 初期化
+    initParameter();
     initBubbles();
     animate();
     updateDateTime();
@@ -261,6 +283,8 @@
     const color = new Color(rgb[0], rgb[1], rgb[2]);
     return color.toFilter();
   }
+
+
 
   </script>
 
