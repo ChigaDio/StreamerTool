@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Menu</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap');
+        body {
+            margin: 0;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: linear-gradient(180deg, #0a0a0a, #1a1a1a);
+            overflow: hidden;
+            font-family: 'Orbitron', sans-serif;
+            color: #fff;
+            position: relative;
+        }
+        .container {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .option {
+            font-size: 4rem;
+            text-transform: uppercase;
+            letter-spacing: 5px;
+            padding: 20px 40px;
+            background: rgba(0, 0, 0, 0.5);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: absolute;
+            overflow: hidden;
+            text-align: center;
+            user-select: none;
+            z-index: 2;
+            perspective: 1000px;
+        }
+
+        .option.clock {
+            top: 20%;
+            left: 20%;
+            transform: translate(-20%, -20%);
+        }
+
+        .option.none {
+            bottom: 20%;
+            right: 20%;
+            transform: translate(20%, 20%);
+        }
+
+        .option:hover {
+            transform: scale(1.05) translate(-20%, -20%) rotateX(15deg) rotateY(10deg);
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.8);
+            box-shadow: 0 0 20px rgba(255, 255, 255, 0.3);
+        }
+
+        .option.none:hover {
+            transform: scale(1.05) translate(20%, 20%) rotateX(15deg) rotateY(10deg);
+        }
+
+        .option::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(
+                90deg,
+                transparent,
+                rgba(255, 255, 255, 0.2),
+                transparent
+            );
+            transition: 0.5s;
+        }
+
+        .option:hover::before {
+            left: 100%;
+        }
+
+        .option span {
+            position: relative;
+            z-index: 1;
+            transition: letter-spacing 0.3s ease, text-shadow 0.3s ease, transform 0.3s ease;
+            display: inline-block;
+            text-shadow: 
+                0 0 5px rgba(255, 255, 255, 0.5),
+                0 0 10px rgba(255, 255, 255, 0.3),
+                2px 2px 2px rgba(0, 0, 0, 0.5),
+                -2px -2px 2px rgba(0, 0, 0, 0.5);
+        }
+
+        .option:hover span {
+            letter-spacing: 8px;
+            text-shadow: 
+                0 0 15px rgba(255, 255, 255, 0.9),
+                0 0 25px rgba(0, 255, 255, 0.7),
+                6px 6px 6px rgba(0, 0, 0, 0.8),
+                -4px -4px 4px rgba(0, 255, 255, 0.4);
+            transform: translateZ(30px) rotateX(20deg) rotateY(15deg);
+        }
+
+        .grid-effect {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: 
+                linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+            background-size: 50px 50px;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .grid-effect.active {
+            opacity: 0.3;
+        }
+
+        .grid-effect.focused {
+            opacity: 0.3;
+        }
+
+        .grid-effect.focused::after {
+            content: '';
+            position: absolute;
+            background: 
+                linear-gradient(rgba(0, 255, 255, 0.4) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 255, 255, 0.4) 1px, transparent 1px);
+            background-size: 50px 50px;
+            clip-path: var(--clip-path);
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+        @media (max-width: 768px) {
+            .option {
+                font-size: 2rem;
+                padding: 10px 20px;
+            }
+            .option.clock {
+                top: 10%;
+                left: 10%;
+                transform: translate(-10%, -10%);
+            }
+            .option.none {
+                bottom: 10%;
+                right: 10%;
+                transform: translate(10%, 10%);
+            }
+            .option:hover {
+                transform: scale(1.05) translate(-10%, -10%) rotateX(15deg) rotateY(10deg);
+            }
+            .option.none:hover {
+                transform: scale(1.05) translate(10%, 10%) rotateX(15deg) rotateY(10deg);
+            }
+            .option:hover span {
+                transform: translateZ(20px) rotateX(20deg) rotateY(15deg);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="option clock" onmouseover="showGrid(event)" onmousemove="updateGrid(event)" onmouseout="hideGrid()"><span>Clock</span></div>
+        <div class="option none" onmouseover="showGrid(event)" onmousemove="updateGrid(event)" onmouseout="hideGrid()"><span>None</span></div>
+        <div class="grid-effect"></div>
+    </div>
+<script>
+    function showGrid(event) {
+        const grid = document.querySelector('.grid-effect');
+        grid.classList.add('active', 'focused');
+        updateGrid(event);
+    }
+
+    function updateGrid(event) {
+        const grid = document.querySelector('.grid-effect');
+        const rect = event.currentTarget.getBoundingClientRect();
+        const containerRect = document.querySelector('.container').getBoundingClientRect();
+        
+        // ホバーした要素の領域をclip-pathで制限
+        const x = rect.left - containerRect.left;
+        const y = rect.top - containerRect.top;
+        const width = rect.width;
+        const height = rect.height;
+        grid.style.setProperty('--clip-path', `polygon(${x}px ${y}px, ${x + width}px ${y}px, ${x + width}px ${y + height}px, ${x}px ${y + height}px)`);
+    }
+
+    function hideGrid() {
+        const grid = document.querySelector('.grid-effect');
+        grid.classList.remove('active', 'focused');
+        grid.style.removeProperty('--clip-path');
+    }
+
+    function selectOption(choice) {
+        const grid = document.querySelector('.grid-effect');
+        grid.classList.add('active');
+        setTimeout(() => {
+            grid.classList.remove('active');
+            alert(`選択: ${choice}`);
+        }, 1000);
+    }
+</script>
+</body>
+</html>

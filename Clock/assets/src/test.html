@@ -1,0 +1,204 @@
+<!-- /public/index.html -->
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Supabaseクライアントサイドテスト</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; }
+    pre { background: #f4f4f4; padding: 10px; border-radius: 5px; }
+    hr { margin: 20px 0; }
+  </style>
+</head>
+<body>
+  <h1>TEST!!</h1>
+  <h2>アイテム作成</h2>
+  <form id="createItemForm">
+    <label for="title_name">タイトル名:</label><br>
+    <input type="text" id="title_name" name="title_name" required><br>
+    <label for="folder_path">フォルダパス（任意）:</label><br>
+    <input type="text" id="folder_path" name="folder_path"><br>
+    <label for="tags">タグ（カンマ区切り、任意）:</label><br>
+    <input type="text" id="tags" name="tags" placeholder="tag1,tag2"><br>
+    <label for="include_paths">インクルードパス（カンマ区切り、任意）:</label><br>
+    <input type="text" id="include_paths" name="include_paths" placeholder="/src/path1,/src/path2"><br>
+    <label for="use_flag">使用フラグ:</label><br>
+    <input type="checkbox" id="use_flag" name="use_flag"><br><br>
+    <button type="submit">アイテム作成</button>
+  </form>
+  <h2>テスト結果</h2>
+  <div id="results"></div>
+
+  <script>
+    // Supabase設定
+    const SUPABASE_URL = 'https://jjawdtpufzszfdzhesfx.supabase.co';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpqYXdkdHB1ZnpzemZkemhlc2Z4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDc3NjE4NzEsImV4cCI6MjA2MzMzNzg3MX0.QMFzlwOICX6QHpBP7Iusfn-jWHuvbQoABYGd2iUzfB4';
+
+    // createItem関数
+    async function createItem(data) {
+      try {
+        const { title_name, folder_path, tags, include_paths, use_flag } = data;
+
+        if (!title_name) {
+          console.warn('バリデーションエラー: title_nameが必要です', { data });
+          return { status: 400, data: { error: 'title_name is required' } };
+        }
+
+        // デバッグ: リクエストデータログ
+        console.log('リクエストデータ:', data);
+
+        // 既存レコードのtitle_nameを取得
+        const checkUrl = `${SUPABASE_URL}/rest/v1/clock_items?select=title_name`;
+        console.log('チェック用URL:', checkUrl);
+        console.log('送信ヘッダー:', {
+          'Apikey': SUPABASE_KEY,
+          'Authorization': `Bearer ${SUPABASE_KEY}`,
+          'Content-Type': 'application/json',
+        });
+        const checkResponse = await fetch(checkUrl, {
+          method: 'GET',
+          headers: {
+            'Apikey': SUPABASE_KEY,
+            'Authorization': `Bearer ${SUPABASE_KEY}`,
+            'Content-Type': 'application/json',
+          },
+        });
+
+        if (!checkResponse.ok) {
+          const errorData = await checkResponse.json();
+          console.error('チェックリクエスト失敗:', errorData);
+          return { status: checkResponse.status, data: errorData };
+        }
+
+        const existingItems = await checkResponse.json();
+        console.log('既存アイテム:', existingItems);
+
+        // title_nameが完全一致するかチェック
+        if (existingItems.some(item => item.title_name === title_name)) {
+          console.warn('重複するtitle_name:', title_name);
+          return { status: 409, data: { error: 'title_name already exists' } };
+        }
+
+        // 新しいレコードを作成
+        const createUrl = `${SUPABASE_URL}/rest/v1/clock_items`;
+        console.log('作成用URL:', createUrl);
+        const createResponse = await fetch(createUrl, {
+          method: 'POST',
+          headers: {
+            'Apikey': SUPABASE_KEY,
+            'Authorization': `Bearer ${SUPABASE_KEY}`,
+            'Content-Type': 'application/json',
+            'Prefer': 'return=representation',
+          },
+          body: JSON.stringify({
+            title_name,
+            folder_path: folder_path || null,
+            tags: tags || null,
+            include_paths: include_paths || null,
+            use_flag: use_flag !== undefined ? use_flag : false,
+          }),
+        });
+
+        if (!createResponse.ok) {
+          const errorData = await createResponse.json();
+          console.error('作成リクエスト失敗:', errorData);
+          return { status: createResponse.status, data: errorData };
+        }
+
+        const newItem = await createResponse.json();
+        console.log('作成されたアイテム:', newItem);
+        return { status: 201, data: newItem };
+      } catch (error) {
+        console.error('予期しないエラー:', error, { requestData: data });
+        return { status: 500, data: { error: error.message } };
+      }
+    }
+
+    // フォーム送信イベント
+    document.getElementById('createItemForm').addEventListener('submit', async (event) => {
+      event.preventDefault();
+
+      // フォームデータ取得
+      const title_name = document.getElementById('title_name').value;
+      const folder_path = document.getElementById('folder_path').value || null;
+      const tags = document.getElementById('tags').value ? document.getElementById('tags').value.split(',').map(t => t.trim()) : null;
+      const include_paths = document.getElementById('include_paths').value ? document.getElementById('include_paths').value.split(',').map(p => p.trim()) : null;
+      const use_flag = document.getElementById('use_flag').checked;
+
+      const data = { title_name, folder_path, tags, include_paths, use_flag };
+      const resultsDiv = document.getElementById('results');
+
+      const { status, data: result } = await createItem(data);
+
+      // 結果を表示
+      resultsDiv.innerHTML += `
+        <h3>テスト: ${title_name}</h3>
+        <p>ステータス: ${status}</p>
+        <pre>${JSON.stringify(result, null, 2)}</pre>
+        <hr>
+      `;
+      console.log('フォーム送信レスポンス:', { status, data: result, requestData: data });
+    });
+
+    // 自動テスト
+    const testCases = [
+      {
+        title: '成功: 新しいアイテム',
+        data: {
+          title_name: 'Test Item 1',
+          folder_path: '/images/test1',
+          tags: ['tag1', 'tag2'],
+          include_paths: ['/src/path1'],
+          use_flag: true,
+        },
+        expectedStatus: 201,
+      },
+      {
+        title: '失敗: 重複するtitle_name',
+        data: {
+          title_name: 'Test Item 1',
+          folder_path: '/images/test2',
+          tags: ['tag3'],
+          include_paths: ['/src/path2'],
+          use_flag: false,
+        },
+        expectedStatus: 409,
+      },
+      {
+        title: '成功: 最小データ',
+        data: {
+          title_name: 'Test Item 2',
+        },
+        expectedStatus: 201,
+      },
+    ];
+
+    async function runAutoTests() {
+      const resultsDiv = document.getElementById('results');
+      resultsDiv.innerHTML = '<h3>自動テスト結果</h3>';
+
+      for (const test of testCases) {
+        const { title, data, expectedStatus } = test;
+        const { status, data: result } = await createItem(data);
+
+        resultsDiv.innerHTML += `
+          <h4>${title}</h4>
+          <p>期待されるステータス: ${expectedStatus}</p>
+          <p>実際のステータス: ${status}</p>
+          <pre>${JSON.stringify(result, null, 2)}</pre>
+          <hr>
+        `;
+        console.log(`テスト: ${title}`, {
+          status,
+          expectedStatus,
+          data: result,
+          requestData: data,
+        });
+      }
+    }
+
+    // ページロード時に自動テスト実行
+    window.onload = runAutoTests;
+  </script>
+</body>
+</html>

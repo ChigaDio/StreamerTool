@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>テストダウンロード</title>
+    </head>
+    <body>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+        <button onclick="downloadZip()">Download ZIP</button>
+<script>
+const filesToLoad = [
+  "/assets/src/test.html",
+];
+
+async function downloadZip() {
+  const zip = new JSZip();
+
+  // 静的ファイル読み込み
+  for (const path of filesToLoad) {
+    const res = await fetch(path);
+    const content = await res.text();
+    const filename = path.split("/").pop(); // 最後の部分をファイル名に
+    zip.file(filename, content);
+  }
+
+  // 動的ファイル生成
+  const dynamicData = { generatedAt: new Date().toISOString(), note: "Created on the fly" };
+  const dynamicJson = JSON.stringify(dynamicData, null, 2);
+  zip.file("generated/new.json", dynamicJson);
+
+  // Blob生成＆ダウンロード
+  const blob = await zip.generateAsync({ type: "blob" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "archive.zip";
+  a.click();
+  URL.revokeObjectURL(url);
+}
+</script>
+
+    </body>
+</html>

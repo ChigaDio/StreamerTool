@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Search Menu</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap');
+        body {
+            margin: 0;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: linear-gradient(180deg, #0a0a0a, #1a1a1a);
+            overflow: hidden;
+            font-family: 'Orbitron', sans-serif;
+            color: #fff;
+            position: relative;
+        }
+        .container {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 2;
+        }
+        .search-box {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 80%;
+            max-width: 600px;
+        }
+        .input-container {
+            position: relative;
+            width: 100%;
+        }
+        input[type="text"] {
+            width: 100%;
+            padding: 15px;
+            font-size: 1.5rem;
+            background: rgba(0, 0, 0, 0.7);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            color: #fff;
+            font-family: 'Orbitron', sans-serif;
+            outline: none;
+            transition: border-color 0.3s ease;
+        }
+        input[type="text"]:focus {
+            border-color: rgba(0, 255, 255, 0.8);
+            box-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
+        }
+        .suggestions {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            width: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 3;
+            display: none;
+        }
+        .suggestions div {
+            padding: 10px;
+            cursor: pointer;
+            font-size: 1.2rem;
+            transition: background 0.3s ease;
+        }
+        .suggestions div:hover {
+            background: rgba(0, 255, 255, 0.2);
+        }
+        .tags-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin: 10px 0;
+        }
+        .tag {
+            background: rgba(0, 255, 255, 0.3);
+            padding: 5px 10px;
+            border-radius: 5px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 1rem;
+        }
+        .tag .remove {
+            cursor: pointer;
+            color: #fff;
+            font-weight: bold;
+        }
+        .search-button {
+            padding: 10px 20px;
+            font-size: 1.5rem;
+            background: rgba(0, 0, 0, 0.7);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            color: #fff;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .search-button:hover {
+            background: rgba(0, 255, 255, 0.2);
+            border-color: rgba(0, 255, 255, 0.8);
+            box-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
+        }
+        .results {
+            margin-top: 20px;
+            width: 80%;
+            max-width: 600px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .result-item {
+            display: flex;
+            align-items: center;
+            padding: 10px;
+            background: rgba(0, 0, 0, 0.7);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .result-item:hover {
+            background: rgba(0, 255, 255, 0.2);
+            border-color: rgba(0, 255, 255, 0.8);
+            transform: scale(1.02);
+        }
+        .result-item img {
+            width: 100px;
+            height: 100px;
+            object-fit: cover;
+            margin-right: 10px;
+        }
+        .loading {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 10;
+        }
+        .loading::before {
+            content: 'SEARCHING';
+            font-size: 2rem;
+            color: rgba(0, 255, 255, 0.8);
+            animation: pulse 1.5s infinite;
+            text-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
+        }
+        @keyframes pulse {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.2); opacity: 0.7; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        .grid-effect {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: 
+                linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+            background-size: 50px 50px;
+            opacity: 0.3;
+            pointer-events: none;
+            z-index: 1;
+        }
+        @media (max-width: 768px) {
+            input[type="text"], .search-button {
+                font-size: 1rem;
+                padding: 10px;
+            }
+            .result-item img {
+                width: 80px;
+                height: 80px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="grid-effect"></div>
+    <div class="container">
+        <div class="search-box">
+            <div class="input-container">
+                <input type="text" id="searchInput" placeholder="Enter tags...">
+                <div class="suggestions" id="suggestions"></div>
+            </div>
+            <div class="tags-container" id="tagsContainer"></div>
+            <button class="search-button" onclick="search()">Search</button>
+        </div>
+        <div class="results" id="results"></div>
+        <div class="loading" id="loading"></div>
+    </div>
+<script>
+    const searchInput = document.getElementById('searchInput');
+    const suggestions = document.getElementById('suggestions');
+    const tagsContainer = document.getElementById('tagsContainer');
+    const results = document.getElementById('results');
+    const loading = document.getElementById('loading');
+
+    // 予測変換用のサンプルタグ（実際はサーバーから取得可能）
+    const availableTags = ['tech', 'science', 'space', 'ai', 'robotics', 'future', 'cyber'];
+
+    searchInput.addEventListener('input', async () => {
+        const query = searchInput.value.toLowerCase();
+        suggestions.innerHTML = '';
+        if (query) {
+            const filteredTags = availableTags.filter(tag => tag.includes(query));
+            filteredTags.forEach(tag => {
+                const div = document.createElement('div');
+                div.textContent = tag;
+                div.onclick = () => addTag(tag);
+                suggestions.appendChild(div);
+            });
+            suggestions.style.display = filteredTags.length ? 'block' : 'none';
+        } else {
+            suggestions.style.display = 'none';
+        }
+    });
+
+    function addTag(tag) {
+        const existingTags = Array.from(tagsContainer.children).map(el => el.dataset.tag);
+        if (!existingTags.includes(tag)) {
+            const tagEl = document.createElement('div');
+            tagEl.className = 'tag';
+            tagEl.dataset.tag = tag;
+            tagEl.innerHTML = `${tag} <span class="remove" onclick="this.parentElement.remove()">×</span>`;
+            tagsContainer.appendChild(tagEl);
+        }
+        searchInput.value = '';
+        suggestions.style.display = 'none';
+    }
+
+    async function search() {
+        const tags = Array.from(tagsContainer.children).map(el => el.dataset.tag);
+        if (!tags.length) {
+            alert('Please add at least one tag.');
+            return;
+        }
+
+        loading.style.display = 'flex';
+        try {
+            const response = await fetch('YOUR_SERVERLESS_ENDPOINT', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ tags })
+            });
+            const data = await response.json();
+            displayResults(data);
+        } catch (error) {
+            console.error('Search error:', error);
+            alert('An error occurred during search.');
+        } finally {
+            loading.style.display = 'none';
+        }
+    }
+
+    function displayResults(data) {
+        results.innerHTML = '';
+        data.forEach(item => {
+            const div = document.createElement('div');
+            div.className = 'result-item';
+            div.innerHTML = `
+                <img src="${item.imagePath}" alt="${item.title}">
+                <span>${item.title}</span>
+            `;
+            div.onclick = () => window.location.href = item.url; // 例: item.urlに遷移先HTML
+            results.appendChild(div);
+        });
+    }
+</script>
+</body>
+</html>
