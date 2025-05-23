@@ -360,6 +360,17 @@ function downloadConfigJson() {
                     } catch (error) {
                         console.error("Error fetching index.html:", error);
                     }
+
+                    try {
+                        const readmeResponse = await fetch(`../Readme.txt`);
+                        if (!readmeResponse.ok) {
+                            throw new Error(`Failed to fetch ../Readme.txt: ${readmeResponse.statusText}`);
+                        }
+                        const readmeBlob = await readmeResponse.blob();
+                        zip.file(`${data.folder_path}/Readme.txt`, readmeBlob);
+                    } catch (error) {
+                        console.error("Error fetching Readme.txt:", error);
+                    }
                 }
             
                 // その他のファイルを追加（例: CSS, JS, 画像）
