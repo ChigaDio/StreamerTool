@@ -94,6 +94,38 @@
     const rightStart = W / 2 + leftMax / 2;
     const rightRange = W - rightStart;
 
+    let bubble_min_speed = 0.3;
+    let bubble_max_speed = 0.7;
+
+    let color_top = {
+      value : "#683D46",
+      alpha : 0.7
+
+    }
+
+    let color_bottom = {
+      value : "#683D46",
+      alpha : 0.3
+
+    }
+
+    // 16進数カラーコードをRGBに変換する関数
+function hexToRgb(hex) {
+  // #を削除して正規化
+  hex = hex.replace(/^#/, '');
+  // 6桁のカラーコードをR, G, Bに分割
+  let r = parseInt(hex.slice(0, 2), 16);
+  let g = parseInt(hex.slice(2, 4), 16);
+  let b = parseInt(hex.slice(4, 6), 16);
+  return { r, g, b };
+}
+
+// rgba文字列を生成する関数
+function toRgbaString(color) {
+  let rgb = hexToRgb(color.value); // 16進数をRGBに変換
+  return `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${color.alpha})`;
+}
+
     // 泡の初期化
     function initBubbles() {
       for (let i = 0; i < bubbleCount; i++) {
@@ -103,33 +135,59 @@
             : Math.random() * rightRange + rightStart,
           y: H - Math.random() * liquidHeight,
           r: 3 + Math.random() * 5,
-          speed: 0.3 + Math.random() * 0.7
+          speed: bubble_min_speed + Math.random() * bubble_max_speed
         });
       }
     }
-      function initParameter()
-  {
-    let data = [];
-    const params = new URLSearchParams(window.location.search);
-    const encodedData = params.get('data'); // クエリパラメーターからJSONデータを取得
 
-    if (encodedData) {
-        try {
-            // デコードしてJSONを解析
-            const decodedData = decodeURIComponent(encodedData);
-            data = JSON.parse(decodedData);
 
-            bubbleCount = data.bubbleCount.value;
-        } catch (error) {
-            console.error("Error parsing JSON data:", error);
-        }
-    } else {
-        console.error("No data parameter found in the URL.");
-    }
+  async function initParameter() {
+      let data = {};
 
+      // URL パラメータからデータを取得
+      const params = new URLSearchParams(window.location.search);
+      const encodedData = params.get('data');
+      if (encodedData) {
+          try {
+              const decodedData = decodeURIComponent(encodedData);
+              data = JSON.parse(decodedData);
+          } catch (error) {
+              console.error("Error parsing URL parameters:", error);
+          }
+      }
+
+      // config.json からデータを取得（URL パラメータがない場合）
+      if (Object.keys(data).length === 0) {
+          try {
+              const response = await fetch('config.json');
+              if (!response.ok) {
+                  throw new Error(`HTTP error! status: ${response.status}`);
+              }
+              data = await response.json();
+          } catch (error) {
+              console.error("Error fetching config.json:", error);
+          }
+      }
+
+      applyParameters(data); // 取得したデータを適用
   }
-
-    // 波のパスを作成
+  function applyParameters(data) {
+      if (data.bubbleCount && data.bubbleCount.value !== undefined) {
+          bubbleCount = data.bubbleCount.value;
+      }
+      if (data.bubble_max_speed && data.bubble_max_speed.value !== undefined) {
+          bubble_max_speed = data.bubble_max_speed.value;
+      }
+      if (data.bubble_min_speed && data.bubble_min_speed.value !== undefined) {
+          bubble_min_speed = data.bubble_min_speed.value;
+      }
+     if (data.color_top && data.color_top.value !== undefined) {
+          color_top = data.color_top;
+      }
+      if (data.color_bottom && data.color_bottom.value !== undefined) {
+          color_bottom = data.color_bottom;
+      }
+  }  // 波のパスを作成
     function createWavePath() {
       const path = new Path2D();
       const baseY = H - liquidHeight;
@@ -149,8 +207,8 @@
     // 波を描画
     function drawWave() {
       const grad = ctx.createLinearGradient(0, H - liquidHeight, 0, H);
-      grad.addColorStop(0, 'rgba(104, 61, 70,0.7)');
-      grad.addColorStop(1, 'rgba(104, 61, 70,0.3)');
+      grad.addColorStop(0, `${toRgbaString(color_top)}`);
+      grad.addColorStop(1, `${toRgbaString(color_bottom)}`);
       ctx.fillStyle = grad;
       ctx.fill(createWavePath());
     }
@@ -189,35 +247,17 @@
       document.getElementById('date').textContent = now.toLocaleDateString();
     }
 
-    // 初期化
-    initParameter();
-    initBubbles();
-    animate();
-    updateDateTime();
-    // 1秒ごとに更新
-    setInterval(updateDateTime, 1000);
+// 初期化処理を非同期で実行
+(async function initialize() {
+    await initParameter(); // パラメータの初期化を待つ
+    initBubbles();         // 泡の初期化
+    animate();             // アニメーション開始
+    updateDateTime();      // 日時更新
+    setInterval(updateDateTime, 1000); // 1秒ごとに日時更新
+})();
   </script>
 
-  <script>
-    
-  function hexToRgb(hex) {
-    const shorthandRegex = /^#?([a-f\d])([a-f\d])([a-f\d])$/i;
-    hex = hex.replace(shorthandRegex, (m, r, g, b) => r + r + g + g + b + b);
-    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-    return result ? [
-      parseInt(result[1], 16),
-      parseInt(result[2], 16),
-      parseInt(result[3], 16)
-    ] : null;
-  }
-  
-  function parseRgb(rgb) {
-    // 支持 rgba 处理（忽略 alpha 通道）
-    const match = rgb.match(/rgb$(?:a)?$$(\d+),\s*(\d+),\s*(\d+)(?:,\s*[\d.]+)?$$/i);
-    return match ? [parseInt(match[1]), parseInt(match[2]), parseInt(match[3])] : null;
-  }
-  
-  
+  <script>  
   class Color {
     constructor(r, g, b) {
       this.set(r, g, b);
@@ -264,25 +304,7 @@
     }
   }
   
-  // カラーをフィルターに変換
-  // rgba(0,0,0,1)などのテキストを
-  function colorToFilter(colorStr) {
-    let rgb = null;
-    
-    // HEX 格式处理
-    if (/^#([A-Fa-f0-9]{3}){1,2}$/.test(colorStr)) {
-      rgb = hexToRgb(colorStr);
-    } 
-    // RGB/RGBA 格式处理（忽略 alpha）
-    else if ((rgb = parseRgb(colorStr))) {
-      // 已赋值
-    }
-    
-    if (!rgb) throw new Error("Invalid color format");
-    
-    const color = new Color(rgb[0], rgb[1], rgb[2]);
-    return color.toFilter();
-  }
+
 
 
 
