@@ -2,18 +2,18 @@ name: Supabase Activity Scheduler
 
 on:
   schedule:
-    - cron: '0 15 * * *'  # 毎日15:00（日本時間、JST）に実行
+    - cron: '0 6 * * *'  # 毎日15:00 JST（UTC 6:00）に実行
   workflow_dispatch:
 
 jobs:
   prevent_pause:
     runs-on: ubuntu-latest
     env:
-      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}  # SupabaseプロジェクトURL
-      SUPABASE_KEY: ${{ secrets.SUPABASE_ANON_KEY }}  # Supabase Anon Key
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}  # GitHub Secretsから参照
+      SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}  # キー名を修正
     steps:
       - name: Send HTTP Request to Supabase
         run: |
           curl -X GET "${SUPABASE_URL}/rest/v1/clock_items?select=*" \
-          -H "Authorization: Bearer ${SUPABASE_KEY}" \
-          -H "apikey: ${SUPABASE_KEY}"
+          -H "Authorization: Bearer ${SUPABASE_ANON_KEY}" \
+          -H "apikey: ${SUPABASE_ANON_KEY}"
