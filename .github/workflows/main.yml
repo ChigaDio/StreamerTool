@@ -1,0 +1,20 @@
+name: Ping Supabase to Prevent Pausing (cURL)
+on:
+  schedule:
+    - cron: '0 9 * * *' # 毎日午前9時 (UTC) に実行
+  workflow_dispatch: # 手動実行を許可
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Supabase via REST API
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }} # または SUPABASE_SERVICE_ROLE_KEY (非推奨)
+        run: |
+          # REST APIのベースURLに、任意の公開テーブルへのGETリクエストを追加
+          # レスポンスサイズを最小限に抑えるため、特定のカラムのみを選択することを推奨します。
+          curl -X GET "${{ env.SUPABASE_URL }}/rest/v1/your_small_public_table?select=id" \
+          -H "apikey: ${{ env.SUPABASE_ANON_KEY }}" \
+          -H "Authorization: Bearer ${{ env.SUPABASE_ANON_KEY }}" \
+          -s -o /dev/null -w "%{http_code}\n" # レスポンスボディを破棄し、HTTPステータスコードのみ表示
