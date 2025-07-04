@@ -25,7 +25,7 @@
     },
     "color_date": {
         "type": "color",
-        "value": "#00FFFF",
+        "value": "#FFFFFF",
         "alpha": 0.95,
         "description": "日付の文字色"
     },
