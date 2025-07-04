@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>ネオンハート時計</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Manufacturing+Consent&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap');
+
+    body {
+      background-color: #1a1a1a;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+    }
+    #parents {
+      position: relative;
+      will-change: transform, opacity;
+    }
+    svg {
+      width: 600px;
+      height: 600px;
+      opacity: 0;
+      transition: opacity 0.5s;
+    }
+    svg.visible {
+      opacity: 1;
+    }
+#clockTime {
+  position: absolute;
+  top: 35%;
+  left: 49.55%;
+  transform: translate(-50%, -50%);
+  font-family: "Manufacturing Consent";
+  font-style: normal;
+  font-size: 170px;
+  color: white;
+  text-align: center;
+  display: flex;
+  align-items: center;
+  will-change: opacity;
+}#hours, #minutes {
+position: absolute;
+  display: inline-block;
+   transform: translate(-50%, -50%);
+  width: 2ch; /* 2文字分の幅を固定 */
+  text-align: center; /* 右揃えで数字を安定させる */
+}#hours
+{
+      top: 60%;
+  left: -349.55%;
+}#minutes {
+          top: 60%;
+  left: 489.55%;
+  text-align: left; /* 分は左揃え */
+}
+
+
+    #clockDateExternal {
+      font-family: "Bebas Neue";
+      font-weight: 400;
+      font-style: normal;
+      font-size: 42px;
+      margin-top: 335px;
+      margin-left: 215px;
+      position: absolute;
+      transform: rotate(-43deg);
+    }
+    @keyframes flip {
+      0% { opacity: 1; transform: scaleX(1); }
+      50% { opacity: 1; transform: scaleX(0.0); }
+      100% { opacity: 1; transform: scaleX(1); }
+    }
+    @keyframes unflip {
+      0% { opacity: 1; transform: scaleX(1); }
+      50% { opacity: 1; transform: scaleX(0.0); }
+      100% { opacity: 1; transform: scaleX(1); }
+    }
+    .flipAnim {
+      animation: flip 1s forwards;
+    }
+    .unflipAnim {
+      animation: unflip 1s forwards;
+    }
+    #clockTime {
+      transform-origin: center;
+      will-change: opacity;
+    }
+  </style>
+</head>
+<body>
+  <div id="parents">
+    <svg id="heartSVG" viewBox="0 0 24 24">
+      <defs>
+        <filter id="neon">
+          <feGaussianBlur stdDeviation="0.4" result="blur"/>
+          <feMerge>
+            <feMergeNode in="blur"/>
+            <feMergeNode in="SourceGraphic"/>
+          </feMerge>
+        </filter>
+      </defs>
+      <path id="heart"
+        d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 
+           2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09
+           C13.09 3.81 14.76 3 16.5 3 
+           19.58 3 22 5.42 22 8.5
+           c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"
+        stroke="#745399"
+        stroke-width="0.2"
+        fill="none"
+        filter="url(#neon)">
+      </path>
+      <path id="heartGuide"
+        d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 
+           2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09
+           C13.09 3.81 14.76 3 16.5 3 
+           19.58 3 22 5.42 22 8.5
+           c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"
+        fill="none"
+        stroke="none"
+        transform="scale(0.95) translate(0.6, 0.6)"
+      />
+      <circle id="movingCircle" r="0.1" fill="white">
+        <animate attributeName="r" values="0.1;0.3;0.1" dur="1.5s" repeatCount="indefinite"/>
+      </circle>
+    </svg>
+    <div id="clockTime">
+      <span id="hours">00</span>:<span id="minutes">00</span>
+    </div>
+  </div>
+  <div id="clockDateExternal">2025/07/04 (Fri)</div>
+
+  <script>
+    const path = document.getElementById("heartGuide");
+    const circle = document.getElementById("movingCircle");
+    const timeText = document.getElementById("clockTime");
+    const dateText = document.getElementById("clockDateExternal");
+    const heart = document.getElementById("heart");
+    const parents = document.getElementById("parents");
+    const svg = document.getElementById("heartSVG");
+    const pathLength = path.getTotalLength();
+
+    let isFilled = false;
+    let lastSecond = -1;
+    let flipped = false;
+
+    let color_forward = { value: "#745399", alpha: 0.7 }; // ハートの表の色と透過
+    let color_back = { value: "#745399", alpha: 0.3 };   // ハートの裏の色と透過
+    let color_time_forward = { value: "#FFFFFF", alpha: 1 }; // 時刻の表の文字色と透過
+    let color_time_back = { value: "#FFD700", alpha: 0.8 };  // 時刻の裏の文字色と透過
+    let color_date = { value: "#00FFFF", alpha: 0.95 };      // 日付の文字色と透過
+    let color_circle_forward = { value: "#FFFFFF", alpha: 1 }; // 丸の表の色と透過
+    let color_circle_back = { value: "#FF0000", alpha: 0.8 }; // 丸の裏の色と透過
+
+    let change = false;
+    async function initParameter() {
+      let data = {};
+
+      const params = new URLSearchParams(window.location.search);
+      const encodedData = params.get('data');
+      if (encodedData) {
+        try {
+          const decodedData = decodeURIComponent(encodedData);
+          data = JSON.parse(decodedData);
+        } catch (error) {
+          console.warn("Error parsing URL parameters:", error);
+        }
+      }
+
+      if (Object.keys(data).length === 0) {
+        try {
+          const response = await fetch('config.json');
+          if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+          data = await response.json();
+        } catch (error) {
+          console.warn("Error fetching config.json:", error);
+        }
+      }
+
+      applyParameters(data);
+    }
+
+    function applyParameters(data) {
+      // ハートの色
+      if (data.color_forward?.type === "color") {
+        if (data.color_forward.value) color_forward.value = data.color_forward.value;
+        if (data.color_forward.alpha !== undefined) color_forward.alpha = data.color_forward.alpha;
+      }
+      if (data.color_back?.type === "color") {
+        if (data.color_back.value) color_back.value = data.color_back.value;
+        if (data.color_back.alpha !== undefined) color_back.alpha = data.color_back.alpha;
+      }
+
+      // 時刻の色
+      if (data.color_time_forward?.type === "color") {
+        if (data.color_time_forward.value) color_time_forward.value = data.color_time_forward.value;
+        if (data.color_time_forward.alpha !== undefined) color_time_forward.alpha = data.color_time_forward.alpha;
+      }
+      if (data.color_time_back?.type === "color") {
+        if (data.color_time_back.value) color_time_back.value = data.color_time_back.value;
+        if (data.color_time_back.alpha !== undefined) color_time_back.alpha = data.color_time_back.alpha;
+      }
+
+      // 日付の色
+      if (data.color_date?.type === "color") {
+        if (data.color_date.value) color_date.value = data.color_date.value;
+        if (data.color_date.alpha !== undefined) color_date.alpha = data.color_date.alpha;
+      }
+
+      // 丸の色
+      if (data.color_circle_forward?.type === "color") {
+        if (data.color_circle_forward.value) color_circle_forward.value = data.color_circle_forward.value;
+        if (data.color_circle_forward.alpha !== undefined) color_circle_forward.alpha = data.color_circle_forward.alpha;
+      }
+      if (data.color_circle_back?.type === "color") {
+        if (data.color_circle_back.value) color_circle_back.value = data.color_circle_back.value;
+        if (data.color_circle_back.alpha !== undefined) color_circle_back.alpha = data.color_circle_back.alpha;
+      }
+
+      if (heart) {
+        heart.setAttribute("stroke", hexToRgba(color_forward)); // 透過込みで設定
+        const shadowColor = hexToRgba(color_forward);
+        svg.style.filter = `drop-shadow(0 0 1px ${shadowColor})`;
+      }
+
+      // 初期文字色と丸の色を適用
+      timeText.style.color = hexToRgba(color_time_forward);
+      dateText.style.color = hexToRgba(color_date);
+      circle.setAttribute("fill", hexToRgba(color_circle_forward));
+
+      // 非同期処理完了後にSVGを表示
+      svg.classList.add("visible");
+    }
+
+    function hexToRgba(hexObj) {
+      const hex = hexObj.value;
+      const alpha = hexObj.alpha ?? 1;
+      const r = parseInt(hex.substr(1, 2), 16);
+      const g = parseInt(hex.substr(3, 2), 16);
+      const b = parseInt(hex.substr(5, 2), 16);
+      return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+    }
+
+    function triggerFlipAnimation() {
+      parents.classList.remove("flipAnim", "unflipAnim");
+      void parents.offsetWidth; // 再適用トリガー
+
+      if (flipped) {
+        parents.classList.add("unflipAnim");
+      } else {
+        parents.classList.add("flipAnim");
+      }
+
+      // 0.5秒後（アニメーションの中間点）
+      setTimeout(() => {
+        onMidFlip();
+      }, 500);
+
+      flipped = !flipped;
+    }
+
+    function onMidFlip() {
+      if (!flipped) {
+        heart.setAttribute("fill", "none");
+        heart.setAttribute("stroke", hexToRgba(color_forward));
+        const shadowColor = hexToRgba(color_forward);
+        svg.style.filter = `drop-shadow(0 0 1px ${shadowColor})`;
+        timeText.style.color = hexToRgba(color_time_forward);
+        circle.setAttribute("fill", hexToRgba(color_circle_forward));
+      } else {
+        heart.setAttribute("fill", hexToRgba(color_back));
+        heart.setAttribute("stroke", "none");
+        const shadowColor = hexToRgba(color_back);
+        svg.style.filter = `drop-shadow(0 0 1px ${shadowColor})`;
+        timeText.style.color = hexToRgba(color_time_back);
+        circle.setAttribute("fill", hexToRgba(color_circle_back));
+      }
+      change = false;
+    }
+
+    function update() {
+      const now = new Date();
+      const seconds = now.getSeconds() + now.getMilliseconds() / 1000;
+      const progress = seconds / 60;
+      const point = path.getPointAtLength(progress * pathLength);
+
+      const scale = 0.95;
+      const offset = 0.6;
+      const scaledPoint = {
+        x: point.x * scale + offset,
+        y: point.y * scale + offset
+      };
+
+      circle.setAttribute("cx", scaledPoint.x);
+      circle.setAttribute("cy", scaledPoint.y);
+
+      const hh = String(now.getHours()).padStart(2, "0");
+      const mm = String(now.getMinutes()).padStart(2, "0");
+      const ss = String(now.getSeconds()).padStart(2, "0");
+
+      const yyyy = now.getFullYear();
+      const MM = String(now.getMonth() + 1).padStart(2, "0");
+      const dd = String(now.getDate()).padStart(2, "0");
+      const dayStr = now.toLocaleDateString("en-US", { weekday: "short" });
+
+      dateText.textContent = `${yyyy}/${MM}/${dd} (${dayStr})`;
+
+      if (ss === "00" && lastSecond !== "00") {
+        triggerFlipAnimation();
+        change = true;
+      }
+      if (!change) {
+        document.getElementById("hours").textContent = hh;
+        document.getElementById("minutes").textContent = mm;
+      }
+
+      lastSecond = ss;
+
+      requestAnimationFrame(update);
+    }
+
+    window.addEventListener("DOMContentLoaded", () => {
+      initParameter();
+      update();
+    });
+  </script>
+</body>
+</html>

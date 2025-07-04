@@ -1,0 +1,44 @@
+{
+    "color_forward": {
+        "type": "color",
+        "value": "#745399",
+        "alpha": 0.7,
+        "description": "ハートの表のカラー"
+    },
+    "color_back": {
+        "type": "color",
+        "value": "#745399",
+        "alpha": 0.3,
+        "description": "ハートの裏のカラー"
+    },
+    "color_time_forward": {
+        "type": "color",
+        "value": "#FFFFFF",
+        "alpha": 1,
+        "description": "時刻の表の文字色"
+    },
+    "color_time_back": {
+        "type": "color",
+        "value": "#FFFFFF",
+        "alpha": 0.8,
+        "description": "時刻の裏の文字色"
+    },
+    "color_date": {
+        "type": "color",
+        "value": "#00FFFF",
+        "alpha": 0.95,
+        "description": "日付の文字色"
+    },
+    "color_circle_forward": {
+        "type": "color",
+        "value": "#FFFFFF",
+        "alpha": 1.0,
+        "description": "丸の表の色"
+    },
+    "color_circle_back": {
+        "type": "color",
+        "value": "#FFFFFF",
+        "alpha": 0.8,
+        "description": "丸の裏の色"
+    }
+}
